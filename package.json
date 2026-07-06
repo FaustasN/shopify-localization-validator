@@ -1,0 +1,11 @@
+{
+  "name": "shopify-localization-validator",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dashboard": "node src/server.js",
+    "scan": "node src/index.js",
+    "validate": "node src/validate.js"
+  }
+}

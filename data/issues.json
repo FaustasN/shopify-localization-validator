@@ -1,0 +1,67 @@
+[
+  {
+    "issueId": "lt-https-ergonix-lt-products-ergonomine-kede-omnisit-pro-options-0-values-0-english-color-grey",
+    "locale": "lt",
+    "productUrl": "https://ergonix.lt/products/ergonomine-kede-omnisit-pro",
+    "productId": null,
+    "sku": null,
+    "field": "options[0].values[0]",
+    "issue": "ENGLISH_COLOR",
+    "severity": "medium",
+    "value": "Grey",
+    "message": "LT option value contains an English color name.",
+    "expected": "Pilka"
+  },
+  {
+    "issueId": "lt-https-ergonix-lt-products-ergonomine-kede-omnisit-pro-options-0-values-1-english-color-black",
+    "locale": "lt",
+    "productUrl": "https://ergonix.lt/products/ergonomine-kede-omnisit-pro",
+    "productId": null,
+    "sku": null,
+    "field": "options[0].values[1]",
+    "issue": "ENGLISH_COLOR",
+    "severity": "medium",
+    "value": "Black",
+    "message": "LT option value contains an English color name.",
+    "expected": "Juoda"
+  },
+  {
+    "issueId": "lv-https-ergonix-lv-products-galda-virsma-product-2-description-empty-field",
+    "locale": "lv",
+    "productUrl": "https://ergonix.lv/products/galda-virsma",
+    "productId": null,
+    "sku": "product-2",
+    "field": "description",
+    "issue": "EMPTY_FIELD",
+    "severity": "medium",
+    "value": "",
+    "message": "LV description presence differs from the other locales.",
+    "expected": "present"
+  },
+  {
+    "issueId": "lv-https-ergonix-lv-products-augstuma-regulejama-galda-ramis-product-3-description-empty-field",
+    "locale": "lv",
+    "productUrl": "https://ergonix.lv/products/augstuma-regulejama-galda-ramis",
+    "productId": null,
+    "sku": "product-3",
+    "field": "description",
+    "issue": "EMPTY_FIELD",
+    "severity": "medium",
+    "value": "",
+    "message": "LV description presence differs from the other locales.",
+    "expected": "present"
+  },
+  {
+    "issueId": "lv-https-ergonix-lv-products-augstuma-regulejams-galds-omnipro-product-5-description-empty-field",
+    "locale": "lv",
+    "productUrl": "https://ergonix.lv/products/augstuma-regulejams-galds-omnipro",
+    "productId": null,
+    "sku": "product-5",
+    "field": "description",
+    "issue": "EMPTY_FIELD",
+    "severity": "medium",
+    "value": "",
+    "message": "LV description presence differs from the other locales.",
+    "expected": "present"
+  }
+]

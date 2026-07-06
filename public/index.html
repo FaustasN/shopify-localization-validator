@@ -1,0 +1,112 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Shopify Localization Validator</title>
+    <link rel="stylesheet" href="/styles.css">
+  </head>
+  <body>
+    <main class="app-shell">
+      <header class="topbar">
+        <div>
+          <p class="eyebrow">Localization QA</p>
+          <h1>Shopify Validator</h1>
+        </div>
+        <div class="actions" aria-label="Validator actions">
+          <button id="scanButton" class="primary-button" type="button">Scan</button>
+          <button id="validateButton" class="secondary-button" type="button">Validate</button>
+        </div>
+      </header>
+
+      <section class="status-row" aria-live="polite">
+        <div class="metric">
+          <span class="metric-label">Issues</span>
+          <strong id="totalIssues">0</strong>
+        </div>
+        <div class="metric">
+          <span class="metric-label">High</span>
+          <strong id="highIssues">0</strong>
+        </div>
+        <div class="metric">
+          <span class="metric-label">Medium</span>
+          <strong id="mediumIssues">0</strong>
+        </div>
+        <div class="metric wide">
+          <span class="metric-label">Status</span>
+          <strong id="runStatus">Ready</strong>
+        </div>
+      </section>
+
+      <section class="filters" aria-label="Issue filters">
+        <label>
+          Search
+          <input id="searchInput" type="search" placeholder="Product, issue, field, value">
+        </label>
+        <label>
+          Locale
+          <select id="localeFilter">
+            <option value="">All</option>
+          </select>
+        </label>
+        <label>
+          Severity
+          <select id="severityFilter">
+            <option value="">All</option>
+          </select>
+        </label>
+        <label>
+          Issue
+          <select id="issueFilter">
+            <option value="">All</option>
+          </select>
+        </label>
+      </section>
+
+      <section class="table-wrap" aria-label="Issue comparison table">
+        <table>
+          <thead>
+            <tr id="tableHeader">
+              <th>Severity</th>
+              <th>Locale</th>
+              <th>Product</th>
+              <th>Field</th>
+              <th>Issue</th>
+              <th>Message</th>
+            </tr>
+          </thead>
+          <tbody id="issueRows"></tbody>
+        </table>
+        <div id="emptyState" class="empty-state" hidden>No issues match the current filters.</div>
+      </section>
+    </main>
+
+    <aside id="detailPanel" class="detail-panel" aria-label="Issue details" hidden>
+      <div class="detail-header">
+        <div>
+          <p id="detailIssue" class="eyebrow"></p>
+          <h2 id="detailProduct"></h2>
+        </div>
+        <button id="closeDetail" class="icon-button" type="button" aria-label="Close details">×</button>
+      </div>
+      <p id="detailMessage" class="detail-message"></p>
+      <dl class="detail-list">
+        <div>
+          <dt>Field</dt>
+          <dd id="detailField"></dd>
+        </div>
+        <div>
+          <dt>Value</dt>
+          <dd id="detailValue"></dd>
+        </div>
+        <div>
+          <dt>Expected</dt>
+          <dd id="detailExpected"></dd>
+        </div>
+      </dl>
+      <div id="detailLocales" class="locale-details"></div>
+    </aside>
+
+    <script src="/app.js" type="module"></script>
+  </body>
+</html>

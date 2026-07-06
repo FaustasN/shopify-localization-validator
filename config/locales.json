@@ -1,0 +1,19 @@
+{
+  "locales": [
+    {
+      "locale": "lt",
+      "baseUrl": "https://ergonix.lt",
+      "limit": 250
+    },
+    {
+      "locale": "lv",
+      "baseUrl": "https://ergonix.lv",
+      "limit": 250
+    },
+    {
+      "locale": "ee",
+      "baseUrl": "https://ergonix.ee",
+      "limit": 250
+    }
+  ]
+}
