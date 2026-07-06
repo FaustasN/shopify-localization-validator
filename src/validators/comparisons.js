@@ -9,6 +9,12 @@ const CUSTOMER_TEXT_FIELDS = [
 ];
 
 const BROKEN_TRANSLATION_PATTERN = /\b(?:translation missing|undefined)\b/i;
+const PRICE_EUR_TOLERANCE = 1;
+const CURRENCY_TO_EUR_RATE = {
+  eur: 1,
+  czk: 1 / 24.65,
+  pln: 1 / 4.3
+};
 const AVAILABILITY_STATES = [
   {
     state: "out_of_stock",
@@ -47,13 +53,102 @@ function parsePrice(value) {
   return Number.isFinite(price) ? price : null;
 }
 
+function detectCurrency(value) {
+  const priceText = String(value ?? "").toLowerCase();
+
+  if (priceText.includes("k\u010d")) {
+    return "czk";
+  }
+
+  if (priceText.includes("z\u0142")) {
+    return "pln";
+  }
+
+  if (priceText.includes("\u20ac")) {
+    return "eur";
+  }
+
+  return "eur";
+}
+
+function parseComparablePrice(value) {
+  const amount = parsePrice(value);
+  const currency = detectCurrency(value);
+  const rate = CURRENCY_TO_EUR_RATE[currency];
+
+  if (amount == null || rate == null) {
+    return null;
+  }
+
+  return {
+    amount,
+    currency,
+    eur: amount * rate
+  };
+}
+
+function pricesMatch(left, right) {
+  if (!left || !right) {
+    return false;
+  }
+
+  return Math.abs(left.eur - right.eur) <= PRICE_EUR_TOLERANCE;
+}
+
+function formatEuroAmount(value) {
+  return `${value.toFixed(2)} EUR`;
+}
+
+const AVAILABILITY_STATE_PHRASES = [
+  {
+    state: "out_of_stock",
+    phrases: [
+      "out of stock",
+      "sold out",
+      "i\u0161parduota",
+      "izp\u0101rdots",
+      "nav noliktav\u0101",
+      "v\u00e4lja m\u00fc\u00fcdud",
+      "laost otsas",
+      "vyprod\u00e1no",
+      "nen\u00ed skladem",
+      "wyprzedane",
+      "brak w magazynie",
+      "brak w sklepie",
+      "niedost\u0119pne",
+      "niedost\u0119pny"
+    ]
+  },
+  {
+    state: "low_stock",
+    phrases: [
+      "low stock",
+      "limited stock",
+      "few left",
+      "ma\u017eas likutis",
+      "neliels pre\u010du daudzums",
+      "v\u00e4ike laoseis",
+      "n\u00edzk\u00e1 z\u00e1soba",
+      "n\u00edzk\u00e9 z\u00e1soby",
+      "m\u00e1lo skladem",
+      "posledn\u00ed kusy",
+      "niska dost\u0119pno\u015b\u0107",
+      "ma\u0142a ilo\u015b\u0107",
+      "ma\u0142o w magazynie",
+      "ostatnie sztuki"
+    ]
+  }
+];
+
 function normalizeAvailabilityState(value) {
   if (isBlank(value)) {
     return "in_stock";
   }
 
-  for (const { state, pattern } of AVAILABILITY_STATES) {
-    if (pattern.test(value)) {
+  const availabilityText = String(value).toLocaleLowerCase();
+
+  for (const { state, phrases } of AVAILABILITY_STATE_PHRASES) {
+    if (phrases.some((phrase) => availabilityText.includes(phrase))) {
       return state;
     }
   }
@@ -215,10 +310,12 @@ function validateOptionCounts(product, baselineProduct, locale, baselineLocale, 
 function validatePriceEquality(productsByLocale, localeOrder, productIndex) {
   const priceRecords = localeOrder.map((locale) => {
     const product = productsByLocale[locale]?.[productIndex];
+    const comparablePrice = parseComparablePrice(product?.price);
+
     return {
       locale,
       product,
-      price: parsePrice(product?.price)
+      price: comparablePrice
     };
   });
 
@@ -228,34 +325,34 @@ function validatePriceEquality(productsByLocale, localeOrder, productIndex) {
 
   const [baselineRecord] = priceRecords;
 
-  if (priceRecords.every((record) => record.price === baselineRecord.price)) {
+  if (priceRecords.every((record) => pricesMatch(record.price, baselineRecord.price))) {
     return [];
   }
 
   return priceRecords
-    .filter((record) => record.price !== baselineRecord.price)
+    .filter((record) => !pricesMatch(record.price, baselineRecord.price))
     .map((record) => createIssue({
       ...productContext(record.product, record.locale, productIndex),
       field: "price",
       issue: "PRICE_DIFFERENCE",
       severity: "high",
       value: record.product?.price ?? null,
-      expected: `${baselineRecord.product?.price ?? baselineRecord.price} (${baselineRecord.locale.toUpperCase()} baseline)`,
-      message: `${record.locale.toUpperCase()} product price differs from ${baselineRecord.locale.toUpperCase()}.`
+      expected: `${baselineRecord.product?.price ?? formatEuroAmount(baselineRecord.price.eur)} (${baselineRecord.locale.toUpperCase()} baseline)`,
+      message: `${record.locale.toUpperCase()} product price differs from ${baselineRecord.locale.toUpperCase()} after EUR conversion.`
     }));
 }
 
 function getDiscountRecord(productsByLocale, locale, productIndex) {
   const product = productsByLocale[locale]?.[productIndex];
-  const price = parsePrice(product?.price);
-  const oldPrice = parsePrice(product?.oldPrice);
+  const price = parseComparablePrice(product?.price);
+  const oldPrice = parseComparablePrice(product?.oldPrice);
 
   return {
     locale,
     product,
     price,
     oldPrice,
-    hasDiscount: price != null && oldPrice != null && oldPrice > price
+    hasDiscount: price != null && oldPrice != null && oldPrice.eur > price.eur
   };
 }
 
@@ -287,15 +384,15 @@ function validateDiscountEquality(productsByLocale, localeOrder, productIndex) {
 
   const [baselineDiscountRecord] = discountedRecords;
   const oldPriceIssues = discountedRecords
-    .filter((record) => record.oldPrice !== baselineDiscountRecord.oldPrice)
+    .filter((record) => !pricesMatch(record.oldPrice, baselineDiscountRecord.oldPrice))
     .map((record) => createIssue({
       ...productContext(record.product, record.locale, productIndex),
       field: "oldPrice",
       issue: "DISCOUNT_PRICE_DIFFERENCE",
       severity: "high",
       value: record.product?.oldPrice ?? null,
-      expected: `${baselineDiscountRecord.product?.oldPrice ?? baselineDiscountRecord.oldPrice} (${baselineDiscountRecord.locale.toUpperCase()} baseline)`,
-      message: `${record.locale.toUpperCase()} product compare-at price differs from ${baselineDiscountRecord.locale.toUpperCase()}.`
+      expected: `${baselineDiscountRecord.product?.oldPrice ?? formatEuroAmount(baselineDiscountRecord.oldPrice.eur)} (${baselineDiscountRecord.locale.toUpperCase()} baseline)`,
+      message: `${record.locale.toUpperCase()} product compare-at price differs from ${baselineDiscountRecord.locale.toUpperCase()} after EUR conversion.`
     }));
 
   return [...discountStateIssues, ...oldPriceIssues];

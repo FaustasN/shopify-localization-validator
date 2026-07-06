@@ -16,6 +16,11 @@ const contentTypes = {
   ".js": "text/javascript; charset=utf-8",
   ".json": "application/json; charset=utf-8"
 };
+const CURRENCY_TO_EUR_RATE = {
+  eur: 1,
+  czk: 1 / 24.65,
+  pln: 1 / 4.3
+};
 
 function sendJson(response, statusCode, payload) {
   response.writeHead(statusCode, {
@@ -79,6 +84,50 @@ function runScript(scriptName) {
   });
 }
 
+function parsePrice(value) {
+  if (typeof value !== "string") {
+    return null;
+  }
+
+  const normalized = value
+    .replace(/[^\d,.-]/g, "")
+    .replace(/\.(?=\d{3}(?:\D|$))/g, "")
+    .replace(",", ".");
+  const price = Number.parseFloat(normalized);
+
+  return Number.isFinite(price) ? price : null;
+}
+
+function detectCurrency(value) {
+  const priceText = String(value ?? "").toLowerCase();
+
+  if (priceText.includes("k\u010d")) {
+    return "czk";
+  }
+
+  if (priceText.includes("z\u0142")) {
+    return "pln";
+  }
+
+  if (priceText.includes("\u20ac")) {
+    return "eur";
+  }
+
+  return "eur";
+}
+
+function formatComparablePrice(value) {
+  const amount = parsePrice(value);
+  const currency = detectCurrency(value);
+  const rate = CURRENCY_TO_EUR_RATE[currency];
+
+  if (amount == null || rate == null) {
+    return value;
+  }
+
+  return `${(amount * rate).toFixed(2)} EUR`;
+}
+
 function getFieldValue(product, field) {
   if (!product || !field) {
     return "";
@@ -130,7 +179,10 @@ function buildIssueRows({ issues, productsByLocale, localeOrder }) {
         const value = issue.field === "products.length"
           ? productsByLocale[locale]?.length
           : getFieldValue(products[locale], issue.field);
-        return [locale, value == null ? "" : value];
+        const displayValue = ["price", "oldPrice"].includes(issue.field)
+          ? formatComparablePrice(value)
+          : value;
+        return [locale, displayValue == null ? "" : displayValue];
       })
     );
     const productUrls = Object.fromEntries(
@@ -142,6 +194,7 @@ function buildIssueRows({ issues, productsByLocale, localeOrder }) {
 
     return {
       ...issue,
+      value: ["price", "oldPrice"].includes(issue.field) ? formatComparablePrice(issue.value) : issue.value,
       productIndex,
       productTitle: issue.field === "products.length"
         ? "Product list"
